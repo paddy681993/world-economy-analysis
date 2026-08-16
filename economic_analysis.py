@@ -67,4 +67,7 @@ axes[1].set_ylabel('Inflation (%) - Log Scale')
 axes[-1].set_xlabel('Year')
 fig.suptitle('Economic Indicators Comparison (5-Year Rolling Average)', fontsize=14)
 plt.tight_layout(rect=[0, 0, 1, 0.97])
+plt.savefig('economic_indicators_comparison.png', dpi=150, bbox_inches='tight')
+
 plt.show()
+
