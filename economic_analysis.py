@@ -7,9 +7,6 @@ def get_indicator(country_code, country_name, indicator_code, indicator_name):
     url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/{indicator_code}?format=json"
     response = requests.get(url)
     data = response.json()
-
-    print(f"DEBUG - {country_name} - {indicator_name}: {data}")
-
     records = data[1]
 
     clean_data = []
@@ -49,66 +46,65 @@ healthcare_indicators = {
     "SH.XPD.PVTD.CH.ZS" : "Private Health Expenditure (% of Health Spending)"
 }
 
+if __name__ == "__main__":
+    # All your data-fetching loops go here.
+    
+    # Fetch everything: 4 countries x 3 indicators = 12 datasets
+    all_data = []
+    for country_code, country_name in countries.items():
+        for indicator_code, indicator_name in indicators.items():
+            df = get_indicator(country_code, country_name, indicator_code, indicator_name)
+            all_data.append(df)
 
-# Fetch everything: 4 countries x 3 indicators = 12 datasets
-all_data = []
-for country_code, country_name in countries.items():
-    for indicator_code, indicator_name in indicators.items():
-        df = get_indicator(country_code, country_name, indicator_code, indicator_name)
-        all_data.append(df)
+    combined = pd.concat(all_data)
+    combined = combined.reset_index(drop=True)
 
-combined = pd.concat(all_data)
-combined = combined.reset_index(drop=True)
+    # Fetching the healthcare indicators for the same countries
+    healthcare_data = []
+    for country_code, country_name in countries.items():
+        for indicator_code, indicator_name in healthcare_indicators.items():
+            df = get_indicator(country_code, country_name, indicator_code, indicator_name)
+            healthcare_data.append(df)
 
-# Fetching the healthcare indicators for the same countries
-healthcare_data = []
-for country_code, country_name in countries.items():
-    for indicator_code, indicator_name in healthcare_indicators.items():
-        df = get_indicator(country_code, country_name, indicator_code, indicator_name)
-        healthcare_data.append(df)
+    healthcare_combined = pd.concat(healthcare_data)
+    healthcare_combined = healthcare_combined.reset_index(drop=True)
 
-healthcare_combined = pd.concat(healthcare_data)
-healthcare_combined = healthcare_combined.reset_index(drop=True)
+    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 12), sharex=True)
 
-print(healthcare_combined.head(10))
-print(healthcare_combined["Indicator"].unique())
+    for i, indicator_name in enumerate(indicators.values()):
+        subset = combined[combined['Indicator'] == indicator_name]
+        for country_name, group in subset.groupby('Country'):
+            group = group.sort_values(by='Year')
+            smoothed = group['Value'].rolling(window=5).mean()
+            axes[i].plot(group['Year'], smoothed, label=country_name)
+        axes[i].set_title(indicator_name)
+        axes[i].grid(True, alpha=0.3)
+        axes[i].legend()
 
-fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 12), sharex=True)
+    axes[1].set_yscale('symlog', linthresh=0.1)   # apply log scale to the second subplot (Inflation)
+    axes[1].set_ylabel('Inflation (%) - Log Scale')
 
-for i, indicator_name in enumerate(indicators.values()):
-    subset = combined[combined['Indicator'] == indicator_name]
-    for country_name, group in subset.groupby('Country'):
-        group = group.sort_values(by='Year')
-        smoothed = group['Value'].rolling(window=5).mean()
-        axes[i].plot(group['Year'], smoothed, label=country_name)
-    axes[i].set_title(indicator_name)
-    axes[i].grid(True, alpha=0.3)
-    axes[i].legend()
+    axes[-1].set_xlabel('Year')
+    fig.suptitle('Economic Indicators Comparison (5-Year Rolling Average)', fontsize=14)
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    plt.savefig('economic_indicators_comparison.png', dpi=150, bbox_inches='tight')
+    plt.show()
 
-axes[1].set_yscale('symlog', linthresh=0.1)   # apply log scale to the second subplot (Inflation)
-axes[1].set_ylabel('Inflation (%) - Log Scale')
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 10))
+    axes = axes.flatten()
 
-axes[-1].set_xlabel('Year')
-fig.suptitle('Economic Indicators Comparison (5-Year Rolling Average)', fontsize=14)
-plt.tight_layout(rect=[0, 0, 1, 0.97])
-plt.savefig('economic_indicators_comparison.png', dpi=150, bbox_inches='tight')
-plt.show()
+    for i, indicator_name in enumerate(healthcare_indicators.values()):
+        subset = healthcare_combined[healthcare_combined['Indicator'] == indicator_name]
+        for country_name, group in subset.groupby('Country'):
+            group = group.sort_values(by='Year')
+            smoothed = group['Value'].rolling(window=5).mean()
+            axes[i].plot(group['Year'], smoothed, label=country_name)
+        axes[i].set_title(indicator_name)
+        axes[i].grid(True, alpha=0.3)
+        axes[i].legend()
 
-fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 10))
-axes = axes.flatten()
-
-for i, indicator_name in enumerate(healthcare_indicators.values()):
-    subset = healthcare_combined[healthcare_combined['Indicator'] == indicator_name]
-    for country_name, group in subset.groupby('Country'):
-        group = group.sort_values(by='Year')
-        smoothed = group['Value'].rolling(window=5).mean()
-        axes[i].plot(group['Year'], smoothed, label=country_name)
-    axes[i].set_title(indicator_name)
-    axes[i].grid(True, alpha=0.3)
-    axes[i].legend()
-
-fig.suptitle('Healthcare Financing Comparison: India, USA, China, Brazil', fontsize=14)
-fig.text(0.5, 0.02, "Year", ha="center")
-plt.tight_layout(rect=[0, 0.03, 1, 0.97])
-plt.savefig('healthcare_financing_comparison.png', dpi=150, bbox_inches='tight')
-plt.show()
+    fig.suptitle('Healthcare Financing Comparison: India, USA, China, Brazil', fontsize=14)
+    fig.text(0.5, 0.02, "Year", ha="center")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.97])
+    plt.savefig('healthcare_financing_comparison.png', dpi=150, bbox_inches='tight')
+    plt.show()
