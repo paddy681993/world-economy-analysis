@@ -27,10 +27,12 @@ def get_indicator(country_code, country_name, indicator_code, indicator_name):
 
 # Countries and indicators we're tracking
 countries = {
-    'USA': 'United States',
-    'CHN': 'China',
-    'IND': 'India',
-    'BRA': 'Brazil',
+    "US": "United States", "GB": "United Kingdom", "DE": "Germany", "FR": "France",
+    "JP": "Japan", "CA": "Canada", "AU": "Australia", "KR": "South Korea",
+    "IN": "India", "CN": "China", "BR": "Brazil", "RU": "Russia", "ZA": "South Africa",
+    "ID": "Indonesia", "MX": "Mexico", "TR": "Turkey", "SA": "Saudi Arabia",
+    "NG": "Nigeria", "EG": "Egypt", "PK": "Pakistan", "BD": "Bangladesh",
+    "VN": "Vietnam", "KE": "Kenya", "AR": "Argentina", "TH": "Thailand"
 }
 
 indicators = {
